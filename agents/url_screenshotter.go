@@ -100,7 +100,7 @@ func (a *URLScreenshotter) screenshotPage(p *core.Page) {
 	chromedp.ListenTarget(ctx, func(ev interface{}) {
 		if _, ok := ev.(*page.EventJavascriptDialogOpening); ok {
 			a.session.Stats.IncrementScreenshotFailed()
-			a.session.Out.Debug("[%s] %s: screenshot failed: alert box popped up\n", a.ID(), p.URL)
+			a.session.Out.Debug("[%s] %s - screenshot failed: alert box popped up\n", a.ID(), p.URL)
 			return
 		}
 	})
@@ -141,20 +141,20 @@ func (a *URLScreenshotter) screenshotPage(p *core.Page) {
 	if err != nil {
 		a.session.Out.Debug("[%s] Screenshot failed for %s: %v\n", a.ID(), p.URL, err)
 		a.session.Stats.IncrementScreenshotFailed()
-		a.session.Out.Error("%s: %s\n", p.URL, Red("screenshot failed"))
+		a.session.Out.Error("%s - %s\n", p.URL, Red("screenshot failed"))
 		return
 	}
 
 	if err := ioutil.WriteFile(a.session.GetFilePath(filePath), pic, 0700); err != nil {
 		a.session.Out.Debug("[%s] Screenshot failed for %s: %v\n", a.ID(), p.URL, err)
 		a.session.Stats.IncrementScreenshotFailed()
-		a.session.Out.Error("%s: %s\n", p.URL, Red("screenshot failed"))
+		a.session.Out.Error("%s - %s\n", p.URL, Red("screenshot failed"))
 		return
 	}
 
 	a.session.Out.Debug("[%s] Screenshotted successfully for %s\n", a.ID(), p.URL)
 	a.session.Stats.IncrementScreenshotSuccessful()
-	a.session.Out.Info("%s: %s\n", p.URL, Green("screenshot successful"))
+	a.session.Out.Info("%s - %s\n", p.URL, Green("screenshot successful"))
 	p.ScreenshotPath = filePath
 	p.HasScreenshot = true
 }

@@ -127,7 +127,7 @@ func (a *URLRequester) OnURL(url string) {
 			a.session.Stats.IncrementResponseCode2xx()
 			status = Green(resp.Status)
 		}
-		a.session.Out.Info("%s: %s\n", url, status)
+		a.session.Out.Info("%s - %s\n", url, status)
 
 		page, err := a.createPageFromResponse(url, resp)
 		if err != nil {

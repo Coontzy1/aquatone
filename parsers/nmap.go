@@ -63,7 +63,7 @@ func (p *NmapParser) hostToURLs(host nmap.Host) []string {
 			continue
 		}
 
-		// 🚨 Check allowed ports if filtering is active
+		// Check allowed ports if filtering is active
 		if p.allowedPorts != nil {
 			if !p.allowedPorts[port.PortId] {
 				continue // Port not allowed

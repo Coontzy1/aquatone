@@ -158,15 +158,23 @@ func (p *Page) AddNote(text string, noteType string) {
 }
 
 func (p *Page) BaseFilename() string {
-	u := p.ParsedURL()
-	h := sha1.New()
-	io.WriteString(h, u.Path)
-	io.WriteString(h, u.Fragment)
+	raw := p.URL
 
-	pathHash := fmt.Sprintf("%x", h.Sum(nil))[0:16]
-	host := strings.Replace(u.Host, ":", "__", 1)
-	filename := fmt.Sprintf("%s__%s__%s", u.Scheme, strings.Replace(host, ".", "_", -1), pathHash)
-	return strings.ToLower(filename)
+	// Replace bad characters
+	filename := strings.ReplaceAll(raw, "://", "_")
+	filename = strings.ReplaceAll(filename, "/", "_")
+	filename = strings.ReplaceAll(filename, ":", "_")
+	filename = strings.ToLower(filename)
+
+	// Trim any trailing underscore
+	filename = strings.TrimSuffix(filename, "_")
+
+	// If somehow empty, fallback
+	if filename == "" {
+		filename = "page"
+	}
+
+	return filename
 }
 
 func (p *Page) ParsedURL() *url.URL {
