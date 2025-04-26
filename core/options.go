@@ -32,6 +32,7 @@ type Options struct {
 	Offline           bool
 	Similarity	  float64
 	HTTPHeaders       []string
+  ShowDefaultPorts bool
 }
 
 func (a *arrayFlags) String() string {
@@ -75,6 +76,7 @@ func ParseOptions() (Options, error) {
 	flag.BoolVar(&opts.Offline, "offline", false, "Use offline JS files to generate the template report (can be browsed without Internet)")
 	flag.Float64Var(&opts.Similarity, "similarity", 0.85, "Similarity rate for screenshots clustering")
 	flag.Var(&headers, "http-header", "Optional HTTP request header (can be used multiple times for multiple headers)")
+  flag.BoolVar(&opts.ShowDefaultPorts, "show-default-ports", false, "Show default ports (80/443) in URLs")
 
 	flag.Parse()
 

@@ -1,22 +1,24 @@
 package parsers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
 	"strings"
 
-	"github.com/shelld3v/aquatone/core"
 	"github.com/lair-framework/go-nmap"
 )
 
 type NmapParser struct {
-	allowedPorts map[int]bool
+	allowedPorts     map[int]bool
+	showDefaultPorts bool
 }
 
-func NewNmapParser(ports string) *NmapParser {
+func NewNmapParser(ports string, showDefaultPorts bool) *NmapParser {
 	parser := &NmapParser{
-		allowedPorts: make(map[int]bool),
+		allowedPorts:     make(map[int]bool),
+		showDefaultPorts: showDefaultPorts,
 	}
 
 	// Parse the ports string (example: "80,443,8080") into a map[int]bool
@@ -83,17 +85,23 @@ func (p *NmapParser) hostToURLs(host nmap.Host) []string {
 
 		if len(host.Hostnames) > 0 {
 			for _, hostname := range host.Hostnames {
-				urls = append(urls, core.HostAndPortToURL(hostname.Name, port.PortId, protocol))
+				urls = append(urls, p.buildURL(protocol, hostname.Name, port.PortId))
 			}
 		}
 		for _, address := range host.Addresses {
 			if address.AddrType == "mac" {
 				continue
 			}
-			urls = append(urls, core.HostAndPortToURL(address.Addr, port.PortId, protocol))
+			urls = append(urls, p.buildURL(protocol, address.Addr, port.PortId))
 		}
 	}
-
 	return urls
 }
 
+func (p *NmapParser) buildURL(protocol, host string, port int) string {
+	if (!p.showDefaultPorts) && 
+	   ((protocol == "http" && port == 80) || (protocol == "https" && port == 443)) {
+		return fmt.Sprintf("%s://%s/", protocol, host)
+	}
+	return fmt.Sprintf("%s://%s:%d/", protocol, host, port)
+}
