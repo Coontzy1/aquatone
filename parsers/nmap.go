@@ -3,16 +3,36 @@ package parsers
 import (
 	"io"
 	"io/ioutil"
+	"strconv"
+	"strings"
 
 	"github.com/shelld3v/aquatone/core"
-
 	"github.com/lair-framework/go-nmap"
 )
 
-type NmapParser struct{}
+type NmapParser struct {
+	allowedPorts map[int]bool
+}
 
-func NewNmapParser() *NmapParser {
-	return &NmapParser{}
+func NewNmapParser(ports string) *NmapParser {
+	parser := &NmapParser{
+		allowedPorts: make(map[int]bool),
+	}
+
+	// Parse the ports string (example: "80,443,8080") into a map[int]bool
+	if ports != "" {
+		portsSlice := strings.Split(ports, ",")
+		for _, portStr := range portsSlice {
+			port, err := strconv.Atoi(strings.TrimSpace(portStr))
+			if err == nil {
+				parser.allowedPorts[port] = true
+			}
+		}
+	} else {
+		parser.allowedPorts = nil // No filtering if no ports provided
+	}
+
+	return parser
 }
 
 func (p *NmapParser) Parse(r io.Reader) ([]string, error) {
@@ -39,14 +59,20 @@ func (p *NmapParser) Parse(r io.Reader) ([]string, error) {
 func (p *NmapParser) hostToURLs(host nmap.Host) []string {
 	var urls []string
 	for _, port := range host.Ports {
-
 		if port.State.State != "open" {
 			continue
 		}
 
+		// 🚨 Check allowed ports if filtering is active
+		if p.allowedPorts != nil {
+			if !p.allowedPorts[port.PortId] {
+				continue // Port not allowed
+			}
+		}
+
 		var protocol string
-		if port.Protocol == "tcp" && (port.Service.Name == "http" || port.Service.Name == "http-alt") {
-			if port.Service.Tunnel == "ssl" {
+		if port.Protocol == "tcp" {
+			if port.Service.Tunnel == "ssl" || port.Service.Name == "https" {
 				protocol = "https"
 			} else {
 				protocol = "http"
@@ -70,3 +96,4 @@ func (p *NmapParser) hostToURLs(host nmap.Host) []string {
 
 	return urls
 }
+

@@ -340,6 +340,11 @@ func NewSession() (*Session, error) {
 	}
 
 	session.Version = Version
+
+  if session.Options.Version {
+    return &session, nil
+  }
+
 	session.Start()
 
 	return &session, nil

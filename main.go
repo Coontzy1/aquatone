@@ -50,10 +50,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	if sess.Options.Version {
-		sess.Out.Info("%s v%s", core.Name, core.Version)
-		os.Exit(0)
-	}
+  if sess.Options.Version {
+      fmt.Printf("%s v%s\n", core.Name, core.Version)
+      os.Exit(0)
+  }
 
 	fi, err := os.Stat(sess.Options.OutDir)
 
@@ -140,7 +140,7 @@ func main() {
 
 	var targets []string
 	if sess.Options.Nmap {
-		parser := parsers.NewNmapParser()
+    parser := parsers.NewNmapParser(sess.Options.Ports)
 		targets, err = parser.Parse(reader)
 		if err != nil {
 			sess.Out.Fatal("Unable to parse input as Nmap/Masscan XML: %s\n", err)
