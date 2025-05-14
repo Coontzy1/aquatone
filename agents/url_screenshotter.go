@@ -12,7 +12,7 @@ import (
 	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
-	"github.com/shelld3v/aquatone/core"
+	"github.com/coontzy1/aquatone/core"
 )
 
 type URLScreenshotter struct {

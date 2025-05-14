@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/shelld3v/aquatone/core"
+	"github.com/coontzy1/aquatone/core"
 )
 
 type URLTlsChecker struct {

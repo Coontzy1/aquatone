@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/shelld3v/aquatone/core"
+	"github.com/coontzy1/aquatone/core"
 	"github.com/parnurzeal/gorequest"
 )
 

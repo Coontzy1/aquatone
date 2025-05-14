@@ -6,7 +6,7 @@ import (
 	"strings"
 	"fmt"
 
-	"github.com/shelld3v/aquatone/core"
+	"github.com/coontzy1/aquatone/core"
 )
 
 type URLPublisher struct {

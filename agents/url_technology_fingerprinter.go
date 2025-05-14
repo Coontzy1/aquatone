@@ -3,7 +3,7 @@ package agents
 import (
 	"fmt"
 
-	"github.com/shelld3v/aquatone/core"
+	"github.com/coontzy1/aquatone/core"
 	wappalyzer "github.com/projectdiscovery/wappalyzergo"
 )
 

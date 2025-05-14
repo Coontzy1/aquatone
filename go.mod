@@ -1,4 +1,4 @@
-module github.com/shelld3v/aquatone
+module github.com/coontzy1/aquatone
 
 go 1.21
 
