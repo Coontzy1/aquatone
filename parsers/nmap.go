@@ -4,104 +4,79 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strconv"
-	"strings"
 
-	"github.com/lair-framework/go-nmap"
+	nmap "github.com/lair-framework/go-nmap"
 )
 
+// NmapParser parses an Nmap XML and returns one URL per host+port.
 type NmapParser struct {
-	allowedPorts     map[int]bool
 	showDefaultPorts bool
 }
 
-func NewNmapParser(ports string, showDefaultPorts bool) *NmapParser {
-	parser := &NmapParser{
-		allowedPorts:     make(map[int]bool),
-		showDefaultPorts: showDefaultPorts,
-	}
-
-	// Parse the ports string (example: "80,443,8080") into a map[int]bool
-	if ports != "" {
-		portsSlice := strings.Split(ports, ",")
-		for _, portStr := range portsSlice {
-			port, err := strconv.Atoi(strings.TrimSpace(portStr))
-			if err == nil {
-				parser.allowedPorts[port] = true
-			}
-		}
-	} else {
-		parser.allowedPorts = nil // No filtering if no ports provided
-	}
-
-	return parser
+// NewNmapParser drops any port‐filtering string and only honors
+// the showDefaultPorts boolean.
+func NewNmapParser(_ string, showDefaultPorts bool) *NmapParser {
+	return &NmapParser{showDefaultPorts: showDefaultPorts}
 }
 
+// Parse reads all <port> entries from the XML and returns
+// URLs for each IPv4+port tuple.
 func (p *NmapParser) Parse(r io.Reader) ([]string, error) {
-	var targets []string
-	bytes, err := ioutil.ReadAll(r)
+	data, err := ioutil.ReadAll(r)
 	if err != nil {
-		return targets, err
+		return nil, err
 	}
-	scan, err := nmap.Parse(bytes)
+	scan, err := nmap.Parse(data)
 	if err != nil {
-		return targets, err
+		return nil, err
 	}
 
+	var targets []string
 	for _, host := range scan.Hosts {
-		urls := p.hostToURLs(host)
-		for _, url := range urls {
-			targets = append(targets, url)
+		for _, u := range p.hostToURLs(host) {
+			targets = append(targets, u)
 		}
 	}
-
 	return targets, nil
 }
 
+// hostToURLs builds a URL for every TCP port on a host,
+// using both hostnames and IPv4 addresses.
 func (p *NmapParser) hostToURLs(host nmap.Host) []string {
 	var urls []string
 	for _, port := range host.Ports {
-		if port.State.State != "open" {
+		// Only TCP
+		if port.Protocol != "tcp" {
 			continue
 		}
-
-		// Check allowed ports if filtering is active
-		if p.allowedPorts != nil {
-			if !p.allowedPorts[port.PortId] {
-				continue // Port not allowed
-			}
+		// Decide http vs https
+		scheme := "http"
+		if port.Service.Tunnel == "ssl" || port.Service.Name == "https" {
+			scheme = "https"
 		}
-
-		var protocol string
-		if port.Protocol == "tcp" {
-			if port.Service.Tunnel == "ssl" || port.Service.Name == "https" {
-				protocol = "https"
-			} else {
-				protocol = "http"
-			}
-		} else {
-			continue
+		// Hostnames first
+		for _, h := range host.Hostnames {
+			urls = append(urls, p.buildURL(scheme, h.Name, port.PortId))
 		}
-
-		if len(host.Hostnames) > 0 {
-			for _, hostname := range host.Hostnames {
-				urls = append(urls, p.buildURL(protocol, hostname.Name, port.PortId))
+		// Then IPv4 addresses
+		for _, addr := range host.Addresses {
+			if addr.AddrType == "ipv4" {
+				urls = append(urls, p.buildURL(scheme, addr.Addr, port.PortId))
 			}
-		}
-		for _, address := range host.Addresses {
-			if address.AddrType == "mac" {
-				continue
-			}
-			urls = append(urls, p.buildURL(protocol, address.Addr, port.PortId))
 		}
 	}
 	return urls
 }
 
-func (p *NmapParser) buildURL(protocol, host string, port int) string {
-	if (!p.showDefaultPorts) && 
-	   ((protocol == "http" && port == 80) || (protocol == "https" && port == 443)) {
-		return fmt.Sprintf("%s://%s/", protocol, host)
+// buildURL formats the URL and omits the default port
+// if showDefaultPorts is false.
+func (p *NmapParser) buildURL(scheme, host string, port int) string {
+	// drop :80 for http or :443 for https if flag is false
+	if !p.showDefaultPorts &&
+		((scheme == "http" && port == 80) ||
+			(scheme == "https" && port == 443)) {
+		return fmt.Sprintf("%s://%s/", scheme, host)
 	}
-	return fmt.Sprintf("%s://%s:%d/", protocol, host, port)
+	return fmt.Sprintf("%s://%s:%d/", scheme, host, port)
 }
+

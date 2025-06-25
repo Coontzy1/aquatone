@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/fatih/color"
@@ -24,15 +25,25 @@ var LogColors = map[int]*color.Color{
 	IMPORTANT: color.New(color.Bold),
 }
 
+var (
+	debugColor   = color.New(color.FgYellow).SprintFunc()
+	successColor = color.New(color.FgGreen).SprintFunc()
+)
+
 type Logger struct {
 	sync.Mutex
 
 	DebugLog *os.File
 	silent   bool
+	debug    bool
 }
 
 func (l *Logger) SetSilent(s bool) {
 	l.silent = s
+}
+
+func (l *Logger) SetDebug(d bool) {
+	l.debug = d
 }
 
 func (l *Logger) SetDebugLog(path string) {
@@ -93,9 +104,38 @@ func (l *Logger) Important(format string, args ...interface{}) {
 }
 
 func (l *Logger) Info(format string, args ...interface{}) {
-	l.Log(INFO, format, args...)
+	if l.silent {
+		return
+	}
+	msg := fmt.Sprintf(format, args...)
+	if strings.Contains(msg, "screenshot successful") && l.isTerminal() {
+		msg = successColor(msg)
+	}
+	fmt.Fprint(l.getInfoWriter(), msg)
 }
 
 func (l *Logger) Debug(format string, args ...interface{}) {
-	l.Log(DEBUG, format, args...)
+	if l.silent || !l.debug {
+		return
+	}
+	msg := fmt.Sprintf(format, args...)
+	if l.DebugLog != nil {
+		l.DebugLog.WriteString(msg)
+	}
+	if l.isTerminal() {
+		msg = debugColor(msg)
+	}
+	fmt.Fprint(os.Stdout, msg)
+}
+
+func (l *Logger) isTerminal() bool {
+	return true // Placeholder implementation. You might want to implement this method based on your actual requirements.
+}
+
+func (l *Logger) getDebugWriter() *os.File {
+	return l.DebugLog
+}
+
+func (l *Logger) getInfoWriter() *os.File {
+	return os.Stdout
 }

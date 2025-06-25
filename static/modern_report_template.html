@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aquatone Report</title>
+    <script src="static/js_local_files/vue.global.js"></script>
+    <script src="static/js_local_files/axios.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #181c24;
+            --bg-secondary: #232837;
+            --text-primary: #e6eaf3;
+            --text-secondary: #a0aec0;
+            --accent: #7dd3fc;
+            --accent-hover: #38bdf8;
+            --border: #334155;
+            --card-bg: #232837;
+            --card-hover: #2d3344;
+            --success: #22d3ee;
+            --warning: #facc15;
+            --error: #f87171;
+            --info: #60a5fa;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            margin: 0;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 0.7rem 0;
+        }
+        .header h1 {
+            font-size: 1.3rem !important;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        .stats {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+            min-width: 180px;
+            flex: 1 1 180px;
+        }
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .controls input, .controls select {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+        }
+        .controls input:focus, .controls select:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+        .controls label {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        .btn {
+            background: var(--accent);
+            color: #181c24;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 1.2rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px 0 rgba(0,0,0,0.08);
+            transition: transform 0.18s cubic-bezier(.4,2,.6,1), box-shadow 0.18s;
+            cursor: pointer;
+            position: relative;
+        }
+        .card:hover {
+            transform: scale(1.035) translateY(-4px);
+            box-shadow: 0 8px 32px 0 rgba(56,189,248,0.10);
+            background: var(--card-hover);
+            z-index: 2;
+        }
+        .screenshot {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            background: #232837;
+            display: block;
+            transition: filter 0.2s;
+        }
+        .card:hover .screenshot {
+            filter: brightness(1.08) saturate(1.2);
+        }
+        .card-content {
+            padding: 1.2rem 1.5rem 1.2rem 1.5rem;
+        }
+        .url {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 0.3rem;
+            word-break: break-all;
+        }
+        .hostname {
+            color: var(--text-secondary);
+            font-size: 0.98rem;
+            margin-bottom: 0.2rem;
+        }
+        .status-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 1rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: var(--bg-secondary);
+            color: var(--info);
+            border: 1px solid var(--border);
+        }
+        .status-success { color: var(--success); }
+        .status-warning { color: var(--warning); }
+        .status-error { color: var(--error); }
+        .status-info { color: var(--info); }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2.5rem 0 0 0;
+        }
+        .pagination button {
+            background: var(--bg-secondary);
+            color: var(--accent);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.4rem 1.1rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        /* Modal */
+        .modal-bg {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 24, 32, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: 1.2rem;
+            max-width: 900px;
+            width: 98vw;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px 0 rgba(56,189,248,0.18);
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem 0.5rem 2rem;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .modal-close:hover {
+            color: var(--accent);
+        }
+        .modal-img {
+            width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            border-radius: 0.8rem;
+            margin: 0 auto 1.5rem auto;
+            display: block;
+            background: #232837;
+        }
+        .modal-link {
+            color: var(--accent);
+            text-decoration: underline;
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-left: 0.5rem;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        .no-screenshot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 180px;
+            background: #232837;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .debug-log {
+            color: #facc15;
+            font-weight: 600;
+        }
+        .success-log {
+            color: #22d3ee;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="container" style="display:flex;align-items:center;justify-content:space-between;">
+                <h1>Aquatone Report</h1>
+                <div>
+                    <input type="file" @change="loadJsonFile" ref="fileInput" style="display:none" accept=".json">
+                    <button class="btn" @click="$refs.fileInput.click()">Load JSON Report</button>
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <!-- Stats -->
+            <div class="stats">
+                <div v-if="displayDuration !== '-'" class="stat-card">
+                    <div class="stat-label">Duration</div>
+                    <div class="stat-value">{{ displayDuration }}</div>
+                </div>
+                <div v-if="displayOpenPorts !== '-'" class="stat-card">
+                    <div class="stat-label">Open Ports</div>
+                    <div class="stat-value">{{ displayOpenPorts }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Successful Requests</div>
+                    <div class="stat-value">{{ displaySuccessfulRequests }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Failed Requests</div>
+                    <div class="stat-value">{{ displayFailedRequests }}</div>
+                </div>
+            </div>
+            <!-- Controls -->
+            <div class="controls">
+                <input type="text" v-model="searchQuery" placeholder="Search URLs or hostnames...">
+                <label>Sort by:</label>
+                <select v-model="sortBy">
+                    <option value="url">URL</option>
+                    <option value="hostname">Hostname</option>
+                    <option value="status">Status</option>
+                    <option value="statusClass">Status Class</option>
+                    <option value="similarity">Similarity</option>
+                </select>
+                <label>Status Filter:</label>
+                <select v-model="statusFilter">
+                    <option value="">All</option>
+                    <option value="2">2XX</option>
+                    <option value="3">3XX</option>
+                    <option value="4">4XX</option>
+                    <option value="5">5XX</option>
+                </select>
+                <label>Show:</label>
+                <select v-model="pageSize">
+                    <option value="24">24 per page</option>
+                    <option value="48">48 per page</option>
+                    <option value="96">96 per page</option>
+                    <option value="all">All</option>
+                </select>
+            </div>
+            <!-- Screenshot Grid -->
+            <div class="grid">
+                <div v-for="page in paginatedPages" :key="page.uuid" class="card" @click="openModal(page)" @click.ctrl.stop="openInNewTab(page.url)" @click.meta.stop="openInNewTab(page.url)">
+                    <img v-if="page.hasScreenshot" :src="page.screenshotPath" :alt="page.url" class="screenshot">
+                    <div v-else class="no-screenshot">
+                        <span style="font-size:2.2rem;">🖼️</span>
+                        <span>No Screenshot</span>
+                    </div>
+                    <span :class="['status-badge', getStatusClass(page.status)]">{{ page.status }}</span>
+                    <div class="card-content">
+                        <div class="url">{{ page.url }}</div>
+                        <div class="hostname">{{ page.hostname }}</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Pagination -->
+            <div v-if="totalPages > 1" class="pagination">
+                <button @click="currentPage--" :disabled="currentPage === 1">Previous</button>
+                <span style="color:var(--text-secondary);">Page {{ currentPage }} of {{ totalPages }}</span>
+                <button @click="currentPage++" :disabled="currentPage === totalPages">Next</button>
+            </div>
+            <!-- Modal -->
+            <div v-if="modalPage" class="modal-bg" @click.self="closeModal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <div style="font-size:1.3rem;font-weight:600;word-break:break-all;">{{ modalPage.url }}</div>
+                        <button class="modal-close" @click="closeModal">&times;</button>
+                    </div>
+                    <a :href="modalPage.url" target="_blank" rel="noopener">
+                        <img v-if="modalPage.hasScreenshot" :src="modalPage.screenshotPath" :alt="modalPage.url" class="modal-img">
+                    </a>
+                    <div v-else style="display:flex;align-items:center;justify-content:center;height:300px;background:#232837;">
+                        <span style="font-size:2.2rem;">🖼️</span>
+                        <span>No Screenshot</span>
+                    </div>
+                    <div v-if="modalPage.headers" style="padding:1rem 2rem 0 2rem;">
+                        <h4 style="margin-bottom:0.5rem;">HTTP Headers</h4>
+                        <pre style="background:#181c24;padding:1rem;border-radius:0.5rem;overflow-x:auto;max-height:200px;">{{ formatHeaders(modalPage.headers) }}</pre>
+                    </div>
+                    <div style="padding:0 2rem 2rem 2rem;">
+                        <a :href="modalPage.url" target="_blank" rel="noopener" class="modal-link">Open in new tab &rarr;</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    const { createApp } = Vue;
+    createApp({
+        data() {
+            return {
+                report: { stats: {}, pages: {} },
+                searchQuery: '',
+                sortBy: 'url',
+                statusFilter: '',
+                pageSize: '24',
+                currentPage: 1,
+                modalPage: null
+            }
+        },
+        computed: {
+            filteredPages() {
+                let pages = Object.values(this.report.pages || {});
+                if (this.searchQuery) {
+                    const q = this.searchQuery.toLowerCase();
+                    pages = pages.filter(p => (p.url || '').toLowerCase().includes(q) || (p.hostname || '').toLowerCase().includes(q));
+                }
+                if (this.statusFilter) {
+                    pages = pages.filter(p => String(p.status).startsWith(this.statusFilter));
+                }
+                if (this.sortBy === 'similarity' && this.report.pageSimilarityClusters) {
+                    let clusters = this.report.pageSimilarityClusters;
+                    clusters.sort((a, b) => (b.pages?.length || 0) - (a.pages?.length || 0));
+                    let sorted = [];
+                    clusters.forEach(cluster => {
+                        (cluster.pages || []).forEach(url => {
+                            const page = Object.values(this.report.pages || {}).find(p => p.url === url);
+                            if (page) sorted.push(page);
+                        });
+                    });
+                    pages = sorted;
+                } else if (this.sortBy === 'hostname') {
+                    pages.sort((a, b) => {
+                        let aVal = a.hostname || '';
+                        let bVal = b.hostname || '';
+                        if (aVal > bVal) return 1;
+                        if (aVal < bVal) return -1;
+                        return 0;
+                    });
+                } else if (this.sortBy === 'statusClass') {
+                    pages.sort((a, b) => {
+                        const aClass = Math.floor((parseInt(a.status) || 0) / 100);
+                        const bClass = Math.floor((parseInt(b.status) || 0) / 100);
+                        if (aClass > bClass) return 1;
+                        if (aClass < bClass) return -1;
+                        return (parseInt(a.status) || 0) - (parseInt(b.status) || 0);
+                    });
+                } else if (this.sortBy !== 'similarity') {
+                    pages.sort((a, b) => {
+                        let aVal = a[this.sortBy] || '';
+                        let bVal = b[this.sortBy] || '';
+                        if (this.sortBy === 'status') {
+                            aVal = parseInt(aVal) || 0;
+                            bVal = parseInt(bVal) || 0;
+                        }
+                        if (aVal > bVal) return 1;
+                        if (aVal < bVal) return -1;
+                        return 0;
+                    });
+                }
+                return pages;
+            },
+            totalPages() {
+                if (this.pageSize === 'all') return 1;
+                return Math.ceil(this.filteredPages.length / parseInt(this.pageSize));
+            },
+            paginatedPages() {
+                if (this.pageSize === 'all') return this.filteredPages;
+                const start = (this.currentPage - 1) * parseInt(this.pageSize);
+                return this.filteredPages.slice(start, start + parseInt(this.pageSize));
+            },
+            displayDuration() {
+                if (!this.report.stats || !this.report.stats.duration) return '-';
+                return this.formatDuration(this.report.stats.duration);
+            },
+            displayOpenPorts() {
+                return (this.report.stats && typeof this.report.stats.portOpen !== 'undefined') ? this.report.stats.portOpen : '-';
+            },
+            displaySuccessfulRequests() {
+                return (this.report.stats && typeof this.report.stats.requestSuccessful !== 'undefined') ? this.report.stats.requestSuccessful : '-';
+            },
+            displayFailedRequests() {
+                return (this.report.stats && typeof this.report.stats.requestFailed !== 'undefined') ? this.report.stats.requestFailed : '-';
+            }
+        },
+        watch: {
+            pageSize() { this.currentPage = 1; },
+            searchQuery() { this.currentPage = 1; }
+        },
+        methods: {
+            loadJsonFile(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            let data = JSON.parse(e.target.result);
+                            // Convert pageSimilarityClusters from object to array if needed
+                            if (data.pageSimilarityClusters && !Array.isArray(data.pageSimilarityClusters)) {
+                                let clusters = [];
+                                for (const [uuid, urls] of Object.entries(data.pageSimilarityClusters)) {
+                                    clusters.push({ uuid, pages: urls });
+                                }
+                                data.pageSimilarityClusters = clusters;
+                            }
+                            this.report = data;
+                        } catch (err) {
+                            alert('Invalid JSON: ' + err.message);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            },
+            getStatusClass(status) {
+                const code = parseInt(status);
+                if (code >= 200 && code < 300) return 'status-badge status-success';
+                if (code >= 300 && code < 400) return 'status-badge status-info';
+                if (code >= 400 && code < 500) return 'status-badge status-warning';
+                if (code >= 500) return 'status-badge status-error';
+                return 'status-badge';
+            },
+            formatDuration(duration) {
+                if (!duration || isNaN(duration)) return '-';
+                const seconds = Math.floor(duration / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                if (hours > 0) return `${hours}h ${minutes % 60}m`;
+                if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+                return `${seconds}s`;
+            },
+            openModal(page) {
+                if (event.ctrlKey || event.metaKey) return;
+                this.modalPage = page;
+            },
+            openInNewTab(url) {
+                window.open(url, '_blank');
+            },
+            closeModal() {
+                this.modalPage = null;
+            },
+            formatHeaders(headers) {
+                if (!headers || !Array.isArray(headers)) return '';
+                return headers.map(h => `${h.name}: ${h.value}`).join('\n');
+            }
+        }
+    }).mount('#app');
+    </script>
+</body>
+</html> 

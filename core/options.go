@@ -30,18 +30,19 @@ type Options struct {
 	Silent            bool
 	Version           bool
 	Offline           bool
-	Similarity	  float64
+	Debug             bool
+	Similarity        float64
 	HTTPHeaders       []string
-  ShowDefaultPorts bool
+	ShowDefaultPorts  bool
 }
 
 func (a *arrayFlags) String() string {
-    return ""
+	return ""
 }
 
 func (a *arrayFlags) Set(value string) error {
-    *a = append(*a, value)
-    return nil
+	*a = append(*a, value)
+	return nil
 }
 
 func ParseOptions() (Options, error) {
@@ -74,9 +75,10 @@ func ParseOptions() (Options, error) {
 	flag.BoolVar(&opts.Silent, "silent", false, "Suppress all output except for errors")
 	flag.BoolVar(&opts.Version, "version", false, "Print current Aquatone version")
 	flag.BoolVar(&opts.Offline, "offline", false, "Use offline JS files to generate the template report (can be browsed without Internet)")
+	flag.BoolVar(&opts.Debug, "debug", false, "Print debug information")
 	flag.Float64Var(&opts.Similarity, "similarity", 0.85, "Similarity rate for screenshots clustering")
 	flag.Var(&headers, "http-header", "Optional HTTP request header (can be used multiple times for multiple headers)")
-  flag.BoolVar(&opts.ShowDefaultPorts, "show-default-ports", false, "Show default ports (80/443) in URLs")
+	flag.BoolVar(&opts.ShowDefaultPorts, "show-default-ports", false, "Show default ports (80/443) in URLs")
 
 	flag.Parse()
 

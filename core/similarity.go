@@ -16,7 +16,10 @@ func GetPageStructure(body io.Reader) ([]string, error) {
 		token := z.Token()
 		switch tt {
 		case html.ErrorToken:
-			return structure, nil
+			if z.Err() == io.EOF {
+				return structure, nil
+			}
+			return structure, z.Err()
 		case html.StartTagToken:
 			structure = append(structure, token.Data)
 			for _, attr := range token.Attr {
@@ -31,6 +34,13 @@ func GetPageStructure(body io.Reader) ([]string, error) {
 }
 
 func GetSimilarity(a, b []string) float64 {
+	if len(a) == 0 && len(b) == 0 {
+		return 1.0 // Both empty, consider them identical
+	}
+	if len(a) == 0 || len(b) == 0 {
+		return 0.0 // One empty, consider them completely different
+	}
+
 	matcher := difflib.NewMatcher(a, b)
 	return matcher.Ratio()
 }
